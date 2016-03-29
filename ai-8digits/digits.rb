@@ -12,6 +12,28 @@ NEIGHBORS = [[1, 3],
              [3, 7],
              [8, 6, 4],
              [7, 5]]
+def get_reversal(numbers)
+  numbers = numbers.dup
+  numbers.delete 0
+  r = 0
+  loop do
+    break if numbers == (1..8).to_a
+    changed = false
+    numbers.count.times do |i|
+      ((i+1)...numbers.count).each do |j|
+        if numbers[i] > numbers[j]
+          numbers[i], numbers[j] = numbers[j], numbers[i]
+          r += 1
+          changed = true
+          break
+        end
+      end
+      break if changed
+    end
+  end
+  r % 2
+end
+
 class State
   include Comparable
   attr_accessor :parent, :numbers
@@ -75,7 +97,7 @@ class NaivePriorityQueue
   end
 
   def pop
-    #@elements.sort!
+    @elements.sort!
     @elements.delete_at(0)
   end
 end
@@ -84,13 +106,18 @@ raise 'Wrong argument' unless ARGV.size == 2
 
 infile, outfile = ARGV
 numbers = File.read(infile).split.map(&:to_i)
+if get_reversal(numbers) != get_reversal(TARGET)
+  puts 'no solution'
+  exit
+end
+
 s = State.new(numbers)
 open = NaivePriorityQueue.new
 open << s
 closed = []
 
 counter = 0
-RubyProf.start
+
 result = loop do
   v = open.pop # O(nlogn)
   unless v
@@ -111,13 +138,6 @@ result = loop do
       open << neighbor
     end
   end
-  counter += 1
-  puts counter if counter % 100 == 0
-  if counter > 1000
-    result = RubyProf.stop
-    byebug
-    exit
-  end
 end
 
 final = []
@@ -126,6 +146,7 @@ while node do
   final.insert(0, node.numbers)
   node = node.parent
 end
+final.delete_at(0)
 str = "#{final.count}\n\n"
 final.each do |status|
   i = 0
