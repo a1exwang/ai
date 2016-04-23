@@ -1,5 +1,11 @@
 infile, outfile = ARGV
 
+K = 0.1
+MOVE_TIMES = 25
+MAX_UNCHANGED_TIMES = 20
+T_STEP = 0.99999
+INITIAL_TEMP = 1
+
 @cities = (File.read infile).split("\n")[1..-1]
 @cities.map! do |city|
   name, x, y = city.split
@@ -37,25 +43,21 @@ def get_neighbor(s)
 end
 
 def poss_func(e, next_e, temp)
-  p = Math.exp((e - next_e) / temp)
-  puts p
-  p
+  Math.exp((e - next_e) / (temp * K))
 end
 
-MAX_TIMES = 25
-MAX_UNCHANGED_TIMES = 15
-T_STEP = 0.99999
-
-s = Array.new(@cities.size) { |x| x }
-en = trip_distance(s)
-temp = 1
+temp = INITIAL_TEMP
 en_unchanged_times = 0
+str = ''
+i = 0
+
+s = (0...@cities.size).to_a
+en = trip_distance(s)
 
 loop do
   temp *= T_STEP
 
   times = 0
-
   last_en = en
   loop do
     neighbor = get_neighbor(s)
@@ -68,7 +70,7 @@ loop do
       en = neighbor_en
     end
     times += 1
-    break if times > MAX_TIMES
+    break if times > MOVE_TIMES
   end
 
   if last_en == en
@@ -78,8 +80,10 @@ loop do
   end
   break if en_unchanged_times > MAX_UNCHANGED_TIMES
 
-  printf "%0.7f %0.7f #{s.join(' ')}\n", temp, en
-  #break if temp < 0.0001
+  puts "n: #{i}, dis: #{en}" if i % 300 == 0
+  
+  i += 1
+  str += (s.map { |x| ('A'..'Z').to_a[x] }).join(' ') + ' ' + temp.to_s + "\n"
 end
 
-puts outfile
+File.write outfile, str
